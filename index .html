@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Logo Maker Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+        
+        /* Custom scrollbar for history */
+        .history-scroll::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .history-scroll::-webkit-scrollbar-track {
+            background: #1e293b; 
+            border-radius: 4px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        .loader {
+            border: 3px solid #1e293b;
+            border-bottom-color: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <main class="w-full max-w-6xl mx-auto space-y-8">
+        <!-- Header -->
+        <header class="text-center space-y-2">
+            <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                AI Logo Creator
+            </h1>
+            <p class="text-slate-400 text-lg">Buat logo profesional impianmu hanya dengan kata-kata.</p>
+        </header>
+
+        <!-- Area Kerja Utama -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            
+            <!-- Panel Input -->
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-magic text-blue-400"></i> Deskripsikan Logomu
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="promptInput" class="block text-sm font-medium text-slate-300 mb-2">Prompt (Ide Logo):</label>
+                        <textarea id="promptInput" rows="4" 
+                            class="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                            placeholder="Contoh: Logo kedai kopi minimalis dengan gambar biji kopi yang membentuk senyuman, warna coklat hangat..."></textarea>
+                    </div>
+                    
+                    <button id="generateBtn" 
+                        class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-6 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 flex justify-center items-center gap-2 shadow-lg">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        <span>Buat Logo Sekarang</span>
+                    </button>
+                    
+                    <div id="loadingStatus" class="hidden text-center text-sm text-slate-400 py-2">
+                        <span class="loader w-5 h-5 mr-2 align-middle"></span>
+                        <span class="align-middle">AI sedang melukis logomu...</span>
+                    </div>
+                    <div id="errorMsg" class="hidden text-red-400 text-sm bg-red-900/30 p-3 rounded-lg border border-red-800">
+                        Terjadi kesalahan. Silakan coba lagi.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Hasil -->
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700 flex flex-col h-full min-h-[400px]">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-image text-emerald-400"></i> Hasil Logo
+                </h2>
+                
+                <div id="resultArea" class="flex-grow flex items-center justify-center bg-slate-900 rounded-xl border border-slate-700 relative overflow-hidden group">
+                    <!-- Placeholder saat kosong -->
+                    <div id="emptyResult" class="text-slate-500 text-center p-6">
+                        <i class="fas fa-image text-4xl mb-3 opacity-50"></i>
+                        <p>Logomu akan muncul di sini.</p>
+                    </div>
+
+                    <!-- Gambar hasil -->
+                    <img id="generatedImage" src="" alt="Generated Logo" class="hidden w-full h-full object-contain p-2">
+                    
+                    <!-- Overlay Tombol Download (muncul saat hover) -->
+                    <div id="downloadOverlay" class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button id="downloadMainBtn" class="bg-white text-slate-900 font-bold py-2 px-4 rounded-lg flex items-center gap-2 hover:bg-slate-200 transition-colors shadow-lg">
+                            <i class="fas fa-download"></i> Unduh Logo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Riwayat -->
+        <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold flex items-center gap-2">
+                    <i class="fas fa-history text-indigo-400"></i> Riwayat Logomu
+                </h2>
+                <span class="text-xs text-slate-400 bg-slate-900 px-2 py-1 rounded-full border border-slate-700">Disimpan Otomatis</span>
+            </div>
+            
+            <div id="historyGrid" class="history-scroll flex overflow-x-auto gap-4 pb-4">
+                <!-- Skeleton Loading Riwayat -->
+                <div id="historyLoading" class="text-slate-500 text-sm flex items-center gap-2">
+                    <span class="loader w-4 h-4 border-2"></span> Memuat riwayat...
+                </div>
+                <!-- Item riwayat akan dirender di sini -->
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        // Import Firebase (Menggunakan versi 11.6.1 sesuai instruksi)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Konfigurasi Environment Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'logo-maker-default-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        
+        let app, db, auth;
+        let currentUserUid = null;
+        let historyUnsubscribe = null;
+
+        // Inisialisasi Firebase JIKA konfigurasi tersedia
+        if (firebaseConfig) {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setupAuth();
+            } catch (error) {
+                console.error("Gagal menginisialisasi Firebase:", error);
+                document.getElementById('historyLoading').innerHTML = '<span class="text-red-400">Gagal terhubung ke database. Riwayat tidak akan disimpan.</span>';
+            }
+        } else {
+            console.warn("Konfigurasi Firebase tidak ditemukan. Berjalan dalam mode tanpa penyimpan cloud.");
+             document.getElementById('historyLoading').innerHTML = '<span>Mode Lokal (Riwayat mungkin hilang saat refresh jika konfigurasi tidak ada)</span>';
+        }
+
+        async function setupAuth() {
+            try {
+                // ATURAN 3: Selalu login sebelum query
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Setelah berhasil login, set UID dan mulai dengarkan riwayat
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUserUid = user.uid;
+                        loadHistory();
+                    } else {
+                        currentUserUid = null;
+                        if(historyUnsubscribe) historyUnsubscribe();
+                    }
+                });
+            } catch (error) {
+                console.error("Error Autentikasi:", error);
+                document.getElementById('historyLoading').innerHTML = '<span class="text-red-400">Gagal mengautentikasi pengguna.</span>';
+            }
+        }
+
+        function getCollectionPath() {
+            // ATURAN 1: Path Ketat untuk data private
+            if (!currentUserUid) return null;
+            return collection(db, 'artifacts', appId, 'users', currentUserUid, 'logos');
+        }
+
+        function loadHistory() {
+            const colRef = getCollectionPath();
+            if (!colRef) return;
+
+            // ATURAN 2: Hindari complex queries. Kita ambil semua dan sort di memori jika perlu, 
+            // tapi orderBy timestamp sederhana biasanya didukung tanpa index tambahan jika cuma satu field.
+            // Namun, untuk patuh ketat pada Aturan 2 ("NEVER use orderBy()"), kita akan ambil semua dan sort di JS.
+            const q = query(colRef); 
+
+            // Pasang Listener
+            historyUnsubscribe = onSnapshot(q, (snapshot) => {
+                const historyContainer = document.getElementById('historyGrid');
+                historyContainer.innerHTML = ''; // Bersihkan kontainer
+                
+                let logos = [];
+                snapshot.forEach((doc) => {
+                    logos.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Urutkan di memori (Terbaru di awal)
+                logos.sort((a, b) => b.createdAt - a.createdAt);
+
+                if (logos.length === 0) {
+                    historyContainer.innerHTML = '<div class="text-slate-500 italic p-4 border border-dashed border-slate-600 rounded-xl w-full text-center">Belum ada logo yang dibuat.</div>';
+                    return;
+                }
+
+                logos.forEach(logo => {
+                    const item = document.createElement('div');
+                    item.className = 'flex-shrink-0 w-32 md:w-40 bg-slate-900 rounded-xl border border-slate-700 overflow-hidden group relative flex flex-col';
+                    
+                    // Elemen Gambar
+                    const img = document.createElement('img');
+                    img.src = logo.imageUrl;
+                    img.alt = logo.prompt;
+                    img.className = 'w-full h-32 md:h-40 object-cover p-2 bg-white'; // Background putih agar logo jelas
+                    
+                    // Tooltip Prompt
+                    const promptTooltip = document.createElement('div');
+                    promptTooltip.className = 'text-xs p-2 text-slate-300 truncate border-t border-slate-700 bg-slate-800';
+                    promptTooltip.textContent = logo.prompt;
+                    promptTooltip.title = logo.prompt;
+
+                    // Tombol Aksi (Hover)
+                    const actionOverlay = document.createElement('div');
+                    actionOverlay.className = 'absolute inset-0 bg-black/70 hidden group-hover:flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity';
+                    
+                    const btnDownload = document.createElement('button');
+                    btnDownload.className = 'bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-lg';
+                    btnDownload.innerHTML = '<i class="fas fa-download"></i>';
+                    btnDownload.title = 'Unduh Logo';
+                    btnDownload.onclick = () => triggerDownload(logo.imageUrl, `logo-${logo.id}.png`);
+
+                    const btnHapus = document.createElement('button');
+                    btnHapus.className = 'bg-red-600 hover:bg-red-500 text-white p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-lg';
+                    btnHapus.innerHTML = '<i class="fas fa-trash"></i>';
+                    btnHapus.title = 'Hapus dari riwayat';
+                    btnHapus.onclick = () => deleteHistoryItem(logo.id);
+
+                    actionOverlay.appendChild(btnDownload);
+                    actionOverlay.appendChild(btnHapus);
+
+                    item.appendChild(img);
+                    item.appendChild(promptTooltip);
+                    item.appendChild(actionOverlay);
+                    
+                    historyContainer.appendChild(item);
+                });
+
+            }, (error) => {
+                console.error("Error Snapshot Riwayat:", error);
+                document.getElementById('historyGrid').innerHTML = '<span class="text-red-400">Gagal memuat riwayat.</span>';
+            });
+        }
+
+        async function saveToHistory(promptText, base64ImageUrl) {
+            const colRef = getCollectionPath();
+            if (!colRef) return; // Jika belum auth, abaikan penyimpanan
+
+            try {
+                await addDoc(colRef, {
+                    prompt: promptText,
+                    imageUrl: base64ImageUrl,
+                    createdAt: Date.now() // Menggunakan Date.now() untuk sorting lokal
+                });
+                console.log("Logo berhasil disimpan ke riwayat.");
+            } catch (error) {
+                console.error("Gagal menyimpan ke riwayat:", error);
+            }
+        }
+
+        async function deleteHistoryItem(docId) {
+            if (!currentUserUid || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUserUid, 'logos', docId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Gagal menghapus item:", error);
+            }
+        }
+
+
+        const btnGenerate = document.getElementById('generateBtn');
+        const inputPrompt = document.getElementById('promptInput');
+        const imgResult = document.getElementById('generatedImage');
+        const emptyState = document.getElementById('emptyResult');
+        const loadingState = document.getElementById('loadingStatus');
+        const errorState = document.getElementById('errorMsg');
+        const overlayDownload = document.getElementById('downloadOverlay');
+        const btnDownloadMain = document.getElementById('downloadMainBtn');
+
+        let currentGeneratedImageDataUrl = null;
+
+        btnGenerate.addEventListener('click', async () => {
+            const userPrompt = inputPrompt.value.trim();
+            if (!userPrompt) {
+                showModal('Peringatan', 'Silakan masukkan deskripsi logo yang Anda inginkan terlebih dahulu.');
+                return;
+            }
+
+            // Siapkan UI untuk loading
+            btnGenerate.disabled = true;
+            btnGenerate.classList.add('opacity-50', 'cursor-not-allowed');
+            loadingState.classList.remove('hidden');
+            errorState.classList.add('hidden');
+            imgResult.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            overlayDownload.classList.remove('group-hover:flex'); // Sembunyikan tombol download saat loading
+
+            try {
+                // Modifikasi prompt untuk memaksa AI membuat format logo
+                const enhancedPrompt = `Create a professional, high-quality logo design based on the following concept: "${userPrompt}". The design should be clean, iconic, suitable for a brand identity.`;
+
+                // Panggil Gemini API (Menggunakan gemini-3.1-flash-image-preview sesuai instruksi)
+                const payload = {
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: enhancedPrompt }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ['IMAGE'],
+                        imageConfig: { aspectRatio: "1:1" } // Logo biasanya kotak
+                    },
+                };
+                
+                // API Key dikosongkan agar otomatis diisi oleh env Canvas
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+
+                if (part && part.inlineData) {
+                    // Berhasil membuat gambar
+                    const base64Data = part.inlineData.data;
+                    const mimeType = part.inlineData.mimeType;
+                    const dataUrl = `data:${mimeType};base64,${base64Data}`;
+                    
+                    // Tampilkan di UI
+                    imgResult.src = dataUrl;
+                    imgResult.classList.remove('hidden');
+                    overlayDownload.classList.add('group-hover:flex');
+                    currentGeneratedImageDataUrl = dataUrl;
+
+                    // Simpan ke Firestore
+                    saveToHistory(userPrompt, dataUrl);
+                    
+                } else {
+                    throw new Error("Format respons API tidak sesuai atau gambar diblokir oleh filter keamanan.");
+                }
+
+            } catch (error) {
+                console.error("Generation error:", error);
+                errorState.textContent = "Gagal membuat logo. " + (error.message || "Coba ubah kata-katamu.");
+                errorState.classList.remove('hidden');
+                emptyState.classList.remove('hidden');
+            } finally {
+                // Kembalikan state tombol
+                btnGenerate.disabled = false;
+                btnGenerate.classList.remove('opacity-50', 'cursor-not-allowed');
+                loadingState.classList.add('hidden');
+            }
+        });
+
+        function triggerDownload(dataUrl, filename = 'ai-logo.png') {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        btnDownloadMain.addEventListener('click', () => {
+            if (currentGeneratedImageDataUrl) {
+                triggerDownload(currentGeneratedImageDataUrl, 'my-generated-logo.png');
+            }
+        });
+
+        // Custom Modal UI menggantikan alert()
+        function showModal(title, message) {
+            // Hapus modal lama jika ada
+            const existingModal = document.getElementById('customModal');
+            if (existingModal) existingModal.remove();
+
+            const modalHtml = `
+                <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity">
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 transform transition-all scale-100">
+                        <h3 class="text-xl font-bold text-white mb-2">${title}</h3>
+                        <p class="text-slate-300 mb-6">${message}</p>
+                        <div class="flex justify-end">
+                            <button onclick="document.getElementById('customModal').remove()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                Mengerti
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+    </script>
+</body>
+</html>
